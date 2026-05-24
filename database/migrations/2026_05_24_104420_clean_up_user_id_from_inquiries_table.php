@@ -12,8 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('inquiries', function (Blueprint $table) {
-            // If the old user_id column is still lingering, drop it safely
+            // Step 1: Drop the foreign key constraint binding the index
             if (Schema::hasColumn('inquiries', 'user_id')) {
+                $table->dropForeign(['user_id']); // Automatically resolves to inquiries_user_id_foreign
+                
+                // Step 2: Now that it's unlinked, safely drop the column
                 $table->dropColumn('user_id');
             }
         });
@@ -25,7 +28,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('inquiries', function (Blueprint $table) {
-            $table->unsignedBigInteger('user_id')->nullable()->after('id');
+            if (!Schema::hasColumn('inquiries', 'user_id')) {
+                // Reconstruct the field column and relationship if rolled back
+                $table->foreignId('user_id')->nullable()->after('id')->constrained('users')->onDelete('cascade');
+            }
         });
     }
 };
