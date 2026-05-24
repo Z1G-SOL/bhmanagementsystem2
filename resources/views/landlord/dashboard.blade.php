@@ -8,6 +8,12 @@
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="alert alert-danger shadow-sm mb-4 border-0 border-start border-danger border-4">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ session('error') }}
+        </div>
+    @endif
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-dark mb-1">Landlord Command Hub</h2>
@@ -81,12 +87,22 @@
                 $tenantUser = $acceptedInquiry ? $acceptedInquiry->renter : null;
             @endphp
             <div class="col">
-                <div class="card h-100 border-2 shadow-sm text-center transition-hover 
+                <div class="card h-100 border-2 shadow-sm text-center transition-hover position-relative 
                     {{ $room->is_available ? 'border-success bg-success-subtle style-cursor-pointer' : 'border-danger bg-danger-subtle' }}"
-                    @if($room->is_available) onclick="if({{ $pendingCount }} > 0) { viewApplicants({{ json_encode($room->room_number) }}, {{ json_encode($room->inquiries) }}); }" @endif>
+                    @if($room->is_available) onclick="if(event.target.closest('button') || event.target.closest('form')) return; if({{ $pendingCount }} > 0) { viewApplicants({{ json_encode($room->room_number) }}, {{ json_encode($room->inquiries) }}); }" @endif>
                     
+                    <div class="position-absolute top-0 end-0 mt-2 me-2" style="z-index: 10;">
+                        <form action="{{ route('landlord.room.destroy', $room->id) }}" method="POST" onsubmit="return confirm('CRITICAL DELETION WARNING:\nAre you sure you want to completely erase Room #{{ $room->room_number }}? This will wipe out all public listings and submission logs permanently.');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-link text-danger p-1 bg-white rounded-circle shadow-sm border" style="line-height: 1; width: 28px; height: 28px;" title="Remove Listing Permanent Asset">
+                                <i class="bi bi-trash3-fill small"></i>
+                            </button>
+                        </form>
+                    </div>
+
                     <div class="card-body p-3 d-flex flex-column justify-content-between">
-                        <div>
+                        <div class="mt-2">
                             <span class="d-block text-uppercase font-monospace text-muted small mb-1">Unit Spec</span>
                             <h4 class="fw-bold text-dark mb-1">#{{ $room->room_number }}</h4>
                             <span class="badge bg-white text-dark border mb-3">PHP {{ number_format($room->monthly_rate, 2) }}</span>

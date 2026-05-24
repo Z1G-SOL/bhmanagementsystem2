@@ -48,13 +48,17 @@ Route::middleware('auth')->group(function () {
         // Property Provisions Pipeline
         Route::post('/room/store', [LandlordDashboardController::class, 'storeRoom'])->name('landlord.room.store');
         
+        // Remove Listing Asset Deletion Trigger Endpoint
+        Route::delete('/room/{id}/delete', [LandlordDashboardController::class, 'destroyRoom'])->name('landlord.room.destroy');
+        
         // Inbound Pipeline Action Endpoints
         Route::post('/inquiry/{id}/accept', [LandlordDashboardController::class, 'acceptInquiry'])->name('landlord.inquiry.accept');
         Route::post('/inquiry/{id}/reject', [LandlordDashboardController::class, 'rejectInquiry'])->name('landlord.inquiry.reject');
         
-        // Fixed URL Redundancy for Tenant Lease Evictions / Marketplace Republishing Engine
+        // Tenant Lease Evictions / Marketplace Republishing Engine
         Route::post('/room/{id}/evict', [LandlordDashboardController::class, 'evictTenant'])->name('landlord.room.evict');
 
+        // Financial & Property Analytics Reporting Matrix
         Route::get('/analytics', [LandlordDashboardController::class, 'viewAnalytics'])->name('landlord.analytics');
         Route::get('/analytics/pdf', [LandlordDashboardController::class, 'exportAnalyticsPDF'])->name('landlord.analytics.pdf');
     });

@@ -60,16 +60,13 @@ class LandlordDashboardController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        // Accept tenant and inject the starting timestamp
         $inquiry->update([
             'status' => 'Accepted',
             'rent_started_at' => now() 
         ]);
         
-        // Take room off the public catalog feed
         $inquiry->room->update(['is_available' => false]);
 
-        // Auto-reject any other competing applications for this unit
         Inquiry::where('room_id', $inquiry->room_id)
             ->where('id', '!=', $id)
             ->where('status', 'Pending')
@@ -108,10 +105,30 @@ class LandlordDashboardController extends Controller
             $activeInquiry->update(['status' => 'Terminated']);
         }
 
-        // Immediately open up space for public marketplace searching
         $room->update(['is_available' => true]);
 
         return back()->with('success', 'Tenant lease ended! Room #' . $room->room_number . ' is now broadcasting as vacant.');
+    }
+
+    /**
+     * Permanently delete a room asset from the platform database.
+     */
+    public function destroyRoom($id)
+    {
+        $room = Room::with('inquiries')->findOrFail($id);
+
+        if ($room->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if (!$room->is_available) {
+            return back()->with('error', 'Action Blocked: You cannot delete a room that is currently occupied by an active tenant. Evict the tenant first.');
+        }
+
+        $room->inquiries()->delete();
+        $room->delete();
+
+        return back()->with('success', 'Room Unit #' . $room->room_number . ' has been permanently removed from your assets.');
     }
 
     /**
@@ -124,7 +141,7 @@ class LandlordDashboardController extends Controller
     }
 
     /**
-     * Compile current statistics and stream a downloable PDF print file.
+     * Compile current statistics and stream a downloadable PDF print file.
      */
     public function exportAnalyticsPDF()
     {
