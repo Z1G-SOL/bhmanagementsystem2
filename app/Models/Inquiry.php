@@ -19,7 +19,8 @@ class Inquiry extends Model
         'age',
         'gender',
         'status',
-        'rent_started_at'
+        'rent_started_at',
+        'valid_id_path' // 👈 ADDED: Required pointer path for the student ID image upload
     ];
 
     /**

@@ -243,7 +243,7 @@
 </div>
 
 <div class="modal fade" id="applicantsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-dark text-white">
                 <h5 class="modal-title fw-bold" id="applicantModalTitle">Inbound Applications</h5>
@@ -257,6 +257,7 @@
                                 <th class="ps-3">Applicant Identity Details</th>
                                 <th>Age</th>
                                 <th>Gender</th>
+                                <th>Verification Document Image</th>
                                 <th>Filing Date</th>
                                 <th class="text-end pe-3">Pipeline Decision Actions</th>
                             </tr>
@@ -283,12 +284,34 @@
                 <h4 class="fw-bold text-dark mb-1" id="tenantDisplayName">---</h4>
                 <span class="badge bg-danger-subtle text-danger mb-4 px-3 py-1 border border-danger">Verified Active Resident</span>
                 
-                <div class="bg-light rounded p-3 text-start border">
+                <div class="bg-light rounded p-3 text-start border mb-3">
                     <div class="mb-2 small"><strong class="text-secondary">Email Address:</strong> <span id="tenantDisplayEmail" class="text-dark float-end">---</span></div>
                     <div class="mb-2 small"><strong class="text-secondary">Phone Number:</strong> <span id="tenantDisplayPhone" class="text-dark float-end">---</span></div>
                     <div class="mb-2 small"><strong class="text-secondary">Age Parameter:</strong> <span id="tenantDisplayAge" class="text-dark float-end">---</span></div>
                     <div class="mb-0 small"><strong class="text-secondary">Gender Group:</strong> <span id="tenantDisplayGender" class="text-dark float-end">---</span></div>
                 </div>
+
+                <div class="p-3 bg-white border rounded text-start">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small font-monospace text-uppercase fw-bold text-secondary">
+                            <i class="bi bi-shield-check text-success me-1"></i> Verification Document
+                        </span>
+                        <span id="tenantDisplayIdBadge" class="badge bg-dark font-monospace text-uppercase" style="font-size: 10px;">---</span>
+                    </div>
+                    <a id="tenantDisplayIdLink" href="#" target="_blank" title="Click to open full size image">
+                        <div class="overflow-hidden rounded border border-secondary-subtle bg-light hover-zoom position-relative" style="max-height: 200px;">
+                            <img id="tenantDisplayIdPhoto" src="" class="w-100 img-fluid object-fit-contain transition" style="max-height: 200px;" alt="Tenant Document ID Frame">
+                            <div class="position-absolute bottom-0 w-100 bg-dark text-white text-center py-1 opacity-75 small font-monospace" style="font-size: 11px;">
+                                <i class="bi bi-search me-1"></i> Click to Enlarge ID
+                            </div>
+                        </div>
+                    </a>
+                    <div id="tenantIdMissingFallback" class="text-center py-3 text-muted border border-dashed rounded d-none">
+                        <i class="bi bi-exclamation-triangle text-warning fs-4 mb-1 d-block"></i>
+                        <small class="fw-bold text-secondary">No Valid ID Attached</small>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -311,13 +334,30 @@
         const pendingInquiries = inquiries.filter(i => i.status === 'Pending');
 
         if (pendingInquiries.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">No processing workflows found.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">No processing workflows found.</td></tr>`;
         } else {
             pendingInquiries.forEach(inquiry => {
                 const dateFiled = inquiry.created_at ? new Date(inquiry.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
                 const name = inquiry.renter ? inquiry.renter.name : 'Unknown';
                 const email = inquiry.renter ? inquiry.renter.email : 'N/A';
                 const phone = inquiry.renter ? inquiry.renter.phone_number : 'N/A';
+                const idTypeStr = inquiry.id_type ? inquiry.id_type : 'VALID ID';
+
+                // Setup the verification document column structure inline
+                let idColumnHtml = '';
+                if(inquiry.valid_id_path) {
+                    const idFileUrl = "/storage/" + inquiry.valid_id_path;
+                    idColumnHtml = `
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="${idFileUrl}" target="_blank" class="d-inline-block border rounded overflow-hidden shadow-sm hover-zoom" style="width: 70px; height: 45px; background: #f8f9fa;">
+                                <img src="${idFileUrl}" class="w-100 h-100 object-fit-cover" alt="ID Thumbnail">
+                            </a>
+                            <span class="badge bg-secondary font-monospace" style="font-size: 9px; max-width: 110px; overflow: hidden; text-overflow: ellipsis;">${idTypeStr}</span>
+                        </div>
+                    `;
+                } else {
+                    idColumnHtml = `<span class="text-muted small italic">Not provided</span>`;
+                }
 
                 const acceptUrl = `/landlord/inquiry/${inquiry.id}/accept`;
                 const rejectUrl = `/landlord/inquiry/${inquiry.id}/reject`;
@@ -330,6 +370,7 @@
                     </td>
                     <td><span class="badge bg-light text-dark border">${inquiry.age} yrs</span></td>
                     <td><span class="text-secondary">${inquiry.gender}</span></td>
+                    <td>${idColumnHtml}</td>
                     <td class="text-muted small">${dateFiled}</td>
                     <td class="text-end pe-3">
                         <div class="d-inline-block">
@@ -358,8 +399,29 @@
         document.getElementById('tenantDisplayAge').innerText = inquiry ? inquiry.age + " years old" : '---';
         document.getElementById('tenantDisplayGender').innerText = inquiry ? inquiry.gender : '---';
         
-        document.getElementById('tenantDisplayPhoto').src = (tenantUser && tenantUser.profile_photo) ? "/storage/" + tenantUser.profile_photo : "https://via.placeholder.com/150";
+        document.getElementById('tenantDisplayPhoto').src = (tenantUser && tenantUser.profile_photo_path) ? "/storage/" + tenantUser.profile_photo_path : "https://via.placeholder.com/150";
         
+        // Contextually map internal verification data references safely inside the document container elements
+        const idImgNode = document.getElementById('tenantDisplayIdPhoto');
+        const idLinkNode = document.getElementById('tenantDisplayIdLink');
+        const idBadgeNode = document.getElementById('tenantDisplayIdBadge');
+        const idFallbackNode = document.getElementById('tenantIdMissingFallback');
+
+        if (inquiry && inquiry.valid_id_path) {
+            const storageUrl = "/storage/" + inquiry.valid_id_path;
+            idImgNode.src = storageUrl;
+            idLinkNode.href = storageUrl;
+            idBadgeNode.innerText = inquiry.id_type ? inquiry.id_type : 'VALID ID';
+            
+            idLinkNode.classList.remove('d-none');
+            idBadgeNode.classList.remove('d-none');
+            idFallbackNode.classList.add('d-none');
+        } else {
+            idLinkNode.classList.add('d-none');
+            idBadgeNode.classList.add('d-none');
+            idFallbackNode.classList.remove('d-none');
+        }
+
         tenantDetailsModalInstance.show();
     }
 </script>
@@ -369,5 +431,10 @@
     .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 .4rem .8rem rgba(0,0,0,.08)!important; transition: all 0.2s ease-in-out; }
     .animate-pulse { animation: pulseAnimation 2s infinite; }
     @keyframes pulseAnimation { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+    
+    /* 🎨 ID Enhancement Styles */
+    .hover-zoom:hover img { transform: scale(1.04); }
+    .hover-zoom img { transition: transform 0.2s ease-in-out; }
+    .border-dashed { border-style: dashed !important; }
 </style>
 @endsection

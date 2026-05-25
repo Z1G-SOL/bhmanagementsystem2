@@ -52,6 +52,13 @@
         </div>
     @endif
 
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>{{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <div class="row g-4 mb-5">
         @forelse($rooms as $room)
             <div class="col-sm-6 col-md-4 col-lg-3">
@@ -131,21 +138,46 @@
                                     <h5 class="modal-title fw-bold"><i class="bi bi-send-fill me-2"></i>File Application for Room {{ $room->room_number }}</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
-                                <form action="{{ route('inquiry.store', $room->id) }}" method="POST">
+                                <form action="{{ route('inquiry.store', $room->id) }}" method="POST" enctype="multipart/form-data">
                                     @csrf
                                     <div class="modal-body p-4">
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold text-secondary">Your Current Age</label>
-                                            <input type="number" name="age" class="form-control" placeholder="e.g. 21" min="15" max="100" required>
+                                        <div class="row mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold text-secondary">Your Current Age</label>
+                                                <input type="number" name="age" class="form-control" placeholder="e.g. 21" min="15" max="100" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold text-secondary">Gender Specification</label>
+                                                <select name="gender" class="form-select" required>
+                                                    <option value="">-- Select --</option>
+                                                    <option value="Male">Male</option>
+                                                    <option value="Female">Female</option>
+                                                    <option value="Other">Other</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div class="mb-0">
-                                            <label class="form-label small fw-bold text-secondary">Gender Specification</label>
-                                            <select name="gender" class="form-select" required>
-                                                <option value="">-- Select Gender --</option>
-                                                <option value="Male">Male</option>
-                                                <option value="Female">Female</option>
-                                                <option value="Other">Other</option>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold text-secondary">Type of Valid ID Submitted</label>
+                                            <select name="id_type" class="form-select" required>
+                                                <option value="">-- Choose ID Document Category --</option>
+                                                <option value="NATIONAL ID">NATIONAL ID</option>
+                                                <option value="PAG-IBIG">PAG-IBIG</option>
+                                                <option value="SSS">SSS</option>
+                                                <option value="VOTER'S ID">VOTER'S ID</option>
+                                                <option value="PASSPORT">PASSPORT</option>
+                                                <option value="CURRENT/UPTODATE SCHOOL ID">CURRENT/UPTODATE SCHOOL ID</option>
                                             </select>
+                                        </div>
+                                        
+                                        <div class="mb-0 p-3 bg-light border rounded border-primary-subtle">
+                                            <label for="valid_id_{{ $room->id }}" class="form-label small fw-bold text-danger">
+                                                <i class="bi bi-card-image me-1"></i> Upload Valid ID Image (Required)
+                                            </label>
+                                            <input type="file" name="valid_id" id="valid_id_{{ $room->id }}" class="form-control border-danger-subtle" accept="image/jpeg, image/png, image/jpg" required>
+                                            <small class="text-muted d-block mt-1 style-italic" style="font-size: 11px;">
+                                                Provide a clear photo image of your student or government ID. Accepted extensions: JPG, JPEG, PNG (Max file capacity limit: 2MB).
+                                            </small>
                                         </div>
                                     </div>
                                     <div class="modal-footer pt-0 border-top-0">

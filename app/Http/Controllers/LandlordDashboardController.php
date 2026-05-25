@@ -12,10 +12,14 @@ class LandlordDashboardController extends Controller
 {
     /**
      * Display the primary Landlord Hub overview.
+     * Modified to explicitly eager-load tenant inquiry and account relationships.
      */
     public function index()
     {
-        $rooms = Room::where('user_id', Auth::id())->with('inquiries.renter')->get();
+        $rooms = Room::where('user_id', Auth::id())
+                     ->with(['inquiries.renter'])
+                     ->get();
+                     
         return view('landlord.dashboard', compact('rooms'));
     }
 
@@ -91,6 +95,7 @@ class LandlordDashboardController extends Controller
      */
     public function evictTenant($id)
     {
+        // Finding via room ID based on your route schema configuration parameter
         $room = Room::findOrFail($id);
         
         if ($room->user_id !== Auth::id()) {
@@ -175,6 +180,7 @@ class LandlordDashboardController extends Controller
         foreach ($rooms as $room) {
             $activeLease = $room->inquiries->where('status', 'Accepted')->first();
             if ($activeLease && $activeLease->renter) {
+                // Modified to use rent_started_at directly or fallback to updated_at timestamp safely
                 $startDate = $activeLease->rent_started_at ?? $activeLease->updated_at;
                 $activeTenants[] = [
                     'room_number' => $room->room_number,
